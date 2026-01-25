@@ -5,7 +5,9 @@ import {
   updateTicketStatus,
   assignTicket,
   getTicketsByStatus,
-  getEscalatedTickets
+  getEscalatedTickets,
+  overrideSeverity,
+  getTicketAuditLogs,
 } from "../controllers/ticket.controller.js";
 
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -66,6 +68,20 @@ router.get(
   verifyJWT,
   authorizeRoles("admin"),
   getEscalatedTickets
+);
+
+router.patch(
+  "/:ticketId/override-severity",
+  verifyJWT,
+  authorizeRoles("admin"),
+  overrideSeverity
+);
+
+router.get(
+  "/:ticketId/audit-logs",
+  verifyJWT,
+  authorizeRoles("admin"),
+  getTicketAuditLogs
 );
 
 export default router;

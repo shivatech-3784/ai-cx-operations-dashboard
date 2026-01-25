@@ -5,6 +5,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { detectSeverity } from "../utils/severity.utils.js";
 import { generateAiSummary } from "../utils/summary.utils.js";
 import { analyzeTicketWithAI } from "../utils/ai.utils.js";
+import AuditLog from "../models/auditLog.model.js";
 
 const calculateSlaDeadline = (severity) => {
   const now = new Date();
@@ -134,6 +135,54 @@ export const getEscalatedTickets = asyncHandler(async (req, res) => {
 
   return res.json(
     new apiResponse(200, tickets, "Escalated tickets fetched")
+  );
+});
+
+
+export const overrideSeverity = asyncHandler(async (req, res) => {
+  const { ticketId } = req.params;
+  const { severity } = req.body;
+
+  if (!["low", "medium", "high"].includes(severity)) {
+    throw new apiError(400, "Invalid severity value");
+  }
+
+  const ticket = await Ticket.findById(ticketId);
+  if (!ticket) {
+    throw new apiError(404, "Ticket not found");
+  }
+  if (ticket.severity === severity) {
+  throw new apiError(400, "Severity is already set to this value");
+  }
+
+  const oldSeverity = ticket.severity;
+
+  // Update ticket
+  ticket.severity = severity;
+  ticket.slaDeadline = calculateSlaDeadline(severity);
+  await ticket.save();
+
+  // Create audit log
+  await AuditLog.create({
+    ticketId: ticket._id,
+    action: "SEVERITY_OVERRIDE",
+    oldValue: oldSeverity,
+    newValue: severity,
+    performedBy: req.user._id,
+  });
+
+  return res.json(
+    new apiResponse(200, ticket, "Severity overridden successfully")
+  );
+});
+
+export const getTicketAuditLogs = asyncHandler(async (req, res) => {
+  const logs = await AuditLog.find({ ticketId: req.params.ticketId })
+    .populate("performedBy", "username role")
+    .sort({ createdAt: -1 });
+
+  return res.json(
+    new apiResponse(200, logs, "Audit logs fetched")
   );
 });
 

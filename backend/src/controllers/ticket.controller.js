@@ -6,6 +6,7 @@ import { detectSeverity } from "../utils/severity.utils.js";
 import { generateAiSummary } from "../utils/summary.utils.js";
 import { analyzeTicketWithAI } from "../utils/ai.utils.js";
 import AuditLog from "../models/auditLog.model.js";
+import { createNotification } from "../utils/notification.utils.js";
 
 const calculateSlaDeadline = (severity) => {
   const now = new Date();
@@ -107,10 +108,19 @@ export const assignTicket = asyncHandler(async (req, res) => {
   ticket.assignedTo = assignedTo;
   await ticket.save();
 
+  // 🔔 Notification
+  await createNotification({
+    user: assignedTo,
+    ticketId: ticket._id,
+    type: "TICKET_ASSIGNED",
+    message: `You have been assigned ticket "${ticket.title}".`,
+  });
+
   return res
     .status(200)
     .json(new apiResponse(200, ticket, "Ticket assigned successfully"));
 });
+
 
 export const getTicketsByStatus = asyncHandler(async (req, res) => {
   const { status } = req.query;
@@ -151,18 +161,17 @@ export const overrideSeverity = asyncHandler(async (req, res) => {
   if (!ticket) {
     throw new apiError(404, "Ticket not found");
   }
+
   if (ticket.severity === severity) {
-  throw new apiError(400, "Severity is already set to this value");
+    throw new apiError(400, "Severity is already set to this value");
   }
 
   const oldSeverity = ticket.severity;
 
-  // Update ticket
   ticket.severity = severity;
   ticket.slaDeadline = calculateSlaDeadline(severity);
   await ticket.save();
 
-  // Create audit log
   await AuditLog.create({
     ticketId: ticket._id,
     action: "SEVERITY_OVERRIDE",
@@ -171,18 +180,16 @@ export const overrideSeverity = asyncHandler(async (req, res) => {
     performedBy: req.user._id,
   });
 
+  // 🔔 Notification
+  await createNotification({
+    user: ticket.createdBy,
+    ticketId: ticket._id,
+    type: "SEVERITY_OVERRIDDEN",
+    message: `Severity for ticket "${ticket.title}" was changed to ${severity}.`,
+  });
+
   return res.json(
     new apiResponse(200, ticket, "Severity overridden successfully")
-  );
-});
-
-export const getTicketAuditLogs = asyncHandler(async (req, res) => {
-  const logs = await AuditLog.find({ ticketId: req.params.ticketId })
-    .populate("performedBy", "username role")
-    .sort({ createdAt: -1 });
-
-  return res.json(
-    new apiResponse(200, logs, "Audit logs fetched")
   );
 });
 
@@ -198,10 +205,10 @@ export const overrideSla = asyncHandler(async (req, res) => {
   if (isNaN(newDeadline.getTime())) {
     throw new apiError(400, "Invalid slaDeadline format");
   }
-  if (newDeadline < new Date()) {
-  throw new apiError(400, "SLA must be in the future");
-  }
 
+  if (newDeadline < new Date()) {
+    throw new apiError(400, "SLA must be in the future");
+  }
 
   const ticket = await Ticket.findById(ticketId);
   if (!ticket) {
@@ -209,22 +216,22 @@ export const overrideSla = asyncHandler(async (req, res) => {
   }
 
   if (ticket.status === "resolved") {
-  throw new apiError(400, "Cannot override SLA for resolved ticket");
+    throw new apiError(400, "Cannot override SLA for resolved ticket");
   }
 
   const oldDeadline = ticket.slaDeadline?.toISOString() || "none";
 
-  // Prevent no-op override
-  if (ticket.slaDeadline && ticket.slaDeadline.getTime() === newDeadline.getTime()) {
+  if (
+    ticket.slaDeadline &&
+    ticket.slaDeadline.getTime() === newDeadline.getTime()
+  ) {
     throw new apiError(400, "SLA deadline is already set to this value");
   }
 
-  // Update ticket
   ticket.slaDeadline = newDeadline;
-  ticket.isEscalated = false; // reset escalation on manual override
+  ticket.isEscalated = false;
   await ticket.save();
 
-  // Audit log
   await AuditLog.create({
     ticketId: ticket._id,
     action: "SLA_OVERRIDE",
@@ -234,9 +241,43 @@ export const overrideSla = asyncHandler(async (req, res) => {
     reason: reason || "Manual SLA override by admin",
   });
 
+  // 🔔 Notification
+  await createNotification({
+    user: ticket.createdBy,
+    ticketId: ticket._id,
+    type: "SLA_OVERRIDDEN",
+    message: `SLA deadline for ticket "${ticket.title}" was updated.`,
+  });
+
   return res.json(
     new apiResponse(200, ticket, "SLA overridden successfully")
   );
 });
+
+
+export const getTicketAuditLogs = asyncHandler(async (req, res) => {
+  const logs = await AuditLog.find({ ticketId: req.params.ticketId })
+    .populate("performedBy", "username role")
+    .sort({ createdAt: -1 });
+
+  return res.json(
+    new apiResponse(200, logs, "Audit logs fetched")
+  );
+});
+
+export const getAllAuditLogs = asyncHandler(async (req, res) => {
+  const logs = await AuditLog.find()
+    .populate("ticketId", "title severity status")
+    .populate("performedBy", "username role")
+    .sort({ createdAt: -1 })
+    .limit(50); // latest 50 logs
+
+  return res.json(
+    new apiResponse(200, logs, "All audit logs fetched")
+  );
+});
+
+
+
 
 

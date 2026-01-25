@@ -10,7 +10,11 @@ const auditLogSchema = new mongoose.Schema(
 
     action: {
       type: String,
-      enum: ["SEVERITY_OVERRIDE", "SLA_OVERRIDE"],
+      enum: [
+        "SEVERITY_OVERRIDE",
+        "SLA_OVERRIDE",
+        "SLA_ESCALATED",   // 🔥 ADD THIS
+      ],
       required: true,
     },
 
@@ -23,16 +27,18 @@ const auditLogSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    reason: {
-      type: String,
-    },
+
     performedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      required: false,    // 🔥 MAKE OPTIONAL
+    },
+
+    reason: {
+      type: String,
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 export default mongoose.model("AuditLog", auditLogSchema);

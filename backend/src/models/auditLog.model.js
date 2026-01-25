@@ -23,14 +23,16 @@ const auditLogSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-
+    reason: {
+      type: String,
+    },
     performedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export default mongoose.model("AuditLog", auditLogSchema);

@@ -186,3 +186,57 @@ export const getTicketAuditLogs = asyncHandler(async (req, res) => {
   );
 });
 
+export const overrideSla = asyncHandler(async (req, res) => {
+  const { ticketId } = req.params;
+  const { slaDeadline, reason } = req.body;
+
+  if (!slaDeadline) {
+    throw new apiError(400, "slaDeadline is required");
+  }
+
+  const newDeadline = new Date(slaDeadline);
+  if (isNaN(newDeadline.getTime())) {
+    throw new apiError(400, "Invalid slaDeadline format");
+  }
+  if (newDeadline < new Date()) {
+  throw new apiError(400, "SLA must be in the future");
+  }
+
+
+  const ticket = await Ticket.findById(ticketId);
+  if (!ticket) {
+    throw new apiError(404, "Ticket not found");
+  }
+
+  if (ticket.status === "resolved") {
+  throw new apiError(400, "Cannot override SLA for resolved ticket");
+  }
+
+  const oldDeadline = ticket.slaDeadline?.toISOString() || "none";
+
+  // Prevent no-op override
+  if (ticket.slaDeadline && ticket.slaDeadline.getTime() === newDeadline.getTime()) {
+    throw new apiError(400, "SLA deadline is already set to this value");
+  }
+
+  // Update ticket
+  ticket.slaDeadline = newDeadline;
+  ticket.isEscalated = false; // reset escalation on manual override
+  await ticket.save();
+
+  // Audit log
+  await AuditLog.create({
+    ticketId: ticket._id,
+    action: "SLA_OVERRIDE",
+    oldValue: oldDeadline,
+    newValue: newDeadline.toISOString(),
+    performedBy: req.user._id,
+    reason: reason || "Manual SLA override by admin",
+  });
+
+  return res.json(
+    new apiResponse(200, ticket, "SLA overridden successfully")
+  );
+});
+
+

@@ -1,0 +1,72 @@
+import express from "express";
+import {
+  createTicket,
+  getAllTickets,
+  updateTicketStatus,
+  assignTicket,
+  getTicketsByStatus,
+  getEscalatedTickets
+} from "../controllers/ticket.controller.js";
+
+import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { authorizeRoles } from "../middlewares/role.middleware.js";
+
+const router = express.Router();
+
+/**
+ * Agent/Admin → create ticket
+ */
+router.post(
+  "/create",
+  verifyJWT,
+  authorizeRoles("agent", "admin"),
+  createTicket
+);
+
+/**
+ * Any logged-in user → view all tickets
+ */
+router.get(
+  "/get",
+  verifyJWT,
+  getAllTickets
+);
+
+/**
+ * Ops/Admin → update ticket status
+ */
+router.patch(
+  "/:ticketId/status",
+  verifyJWT,
+  authorizeRoles("agent", "admin"),
+  updateTicketStatus
+);
+
+/**
+ * Admin → assign ticket to ops
+ */
+router.patch(
+  "/:ticketId/assign",
+  verifyJWT,
+  authorizeRoles("admin"),
+  assignTicket
+);
+
+/**
+ * Any logged-in user → filter tickets
+ */
+router.get(
+  "/filter",
+  verifyJWT,
+  getTicketsByStatus
+);
+
+router.get(
+  "/escalated",
+  verifyJWT,
+  authorizeRoles("admin"),
+  getEscalatedTickets
+);
+
+export default router;
+

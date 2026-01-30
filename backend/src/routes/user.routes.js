@@ -6,6 +6,7 @@ import {
   getuserdetails,
   getuserbyid,
   getallusers,
+  getAgents
 } from "../controllers/user.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
@@ -18,7 +19,8 @@ router.route("/logout").post(verifyJWT, Logoutuser);
 
 // user
 router.route("/me").get(verifyJWT, getuserdetails);
-router.route("/:id").get(verifyJWT, getuserbyid);
+router.route("/agents").get(verifyJWT, getAgents);
 router.route("/").get(verifyJWT, getallusers);
+router.route("/:id").get(verifyJWT, getuserbyid);
 
 export default router;

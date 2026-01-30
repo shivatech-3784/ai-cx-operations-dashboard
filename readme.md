@@ -18,4 +18,30 @@ Ops updates status (in-progress → resolved)
 ↓
 Ticket closed
 
+src/
+ ├─ pages/
+ │   ├─ Login.jsx
+ │   ├─ Register.jsx
+ │   ├─ Dashboard.jsx
+ │   ├─ Tickets.jsx
+ │   └─ AuditLogs.jsx
+ │
+ ├─ components/
+ │   ├─ Navbar.jsx
+ │   ├─ Sidebar.jsx
+ │   ├─ TicketCard.jsx
+ │   ├─ NotificationBell.jsx
+ │   └─ ProtectedRoute.jsx
+ │
+ ├─ context/
+ │   ├─ AuthContext.jsx
+ │   └─ SocketContext.jsx
+ │
+ ├─ services/
+ │   ├─ auth.api.js
+ │   ├─ ticket.api.js
+ │   └─ notification.api.js
+ │
+ └─ utils/
+     └─ axiosInstance.js
 

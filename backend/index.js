@@ -1,18 +1,25 @@
-import "dotenv/config"; // 🔥 MUST be first, no function call
+import "dotenv/config";
+import http from "http";
 
-import { connectDB } from "./src/config/db.js";
 import app from "./src/app.js";
-
+import { connectDB } from "./src/config/db.js";
+import { initSocket } from "./src/socket/index.js";
 import { startSlaEscalationJob } from "./src/cron/slaEscalation.cron.js";
 
 connectDB()
   .then(() => {
-    app.listen(process.env.PORT || 5000, () => {
-      console.log(`Server running on ${process.env.PORT || 5000}`);
-    });
-    // 🔥 Start background SLA job
+    const server = http.createServer(app);
+
+    // 🔌 Start WebSocket
+    initSocket(server);
+
+    // ⏱️ START CRON JOB (VERY IMPORTANT)
     startSlaEscalationJob();
+
+    server.listen(process.env.PORT || 5000, () => {
+      console.log("Server running on", process.env.PORT || 5000);
+    });
   })
-  .catch((error) => {
-    console.log("Mongo connection failed", error);
+  .catch((err) => {
+    console.error("Mongo connection failed", err);
   });

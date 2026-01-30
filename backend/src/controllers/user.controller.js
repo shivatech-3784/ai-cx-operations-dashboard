@@ -101,12 +101,19 @@ const Loginuser = asyncHandler(async (req, res) => {
   if (!savedUser) {
     throw new apiError(500, "Failed to retrieve saved user");
   }
-
+  // for production purpose 
+  // const options = {
+  //   httpOnly: true,
+  //   secure: true,
+  //   sameSite: "None",
+  //   maxAge: 24 * 60 * 60 * 1000,
+  // };
   const options = {
-    httpOnly: true,
-    secure: true,
-    sameSite: "None",
-    maxAge: 24 * 60 * 60 * 1000,
+  httpOnly: true,
+  secure: false,        // 🔴 MUST be false on localhost
+  sameSite: "lax",    // 🔴 MUST be lax on localhost
+  path: "/",   
+  maxAge: 24 * 60 * 60 * 1000,
   };
   return res
     .status(200)
@@ -192,6 +199,16 @@ const getallusers = asyncHandler(async (req, res) => {
     .json(new apiResponse(200, users, "Users retrieved successfully"));
 });
 
+
+const getAgents = asyncHandler(async (req, res) => {
+  const agents = await User.find({ role: "agent" })
+    .select("_id username email");
+
+  return res.json(
+    new apiResponse(200, agents, "Agents fetched")
+  );
+});
+
 export {
   createUser,
   Loginuser,
@@ -199,4 +216,5 @@ export {
   getuserdetails,
   getuserbyid,
   getallusers,
+  getAgents
 };

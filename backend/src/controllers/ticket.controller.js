@@ -56,14 +56,30 @@ export const createTicket = asyncHandler(async (req, res) => {
 });
 
 export const getAllTickets = asyncHandler(async (req, res) => {
-  const tickets = await Ticket.find()
+  const user = req.user;
+  let filter = {};
+
+  // 🔒 Agent: only assigned or created tickets
+  if (user.role === "agent") {
+    filter = {
+      $or: [
+        { assignedTo: user._id },
+        { createdBy: user._id },
+      ],
+    };
+  }
+
+  // 👑 Admin: sees all tickets (filter stays empty)
+  const tickets = await Ticket.find(filter)
     .populate("createdBy", "username email")
-    .populate("assignedTo", "username email");
+    .populate("assignedTo", "username email")
+    .sort({ createdAt: -1 });
 
   return res
     .status(200)
     .json(new apiResponse(200, tickets, "Tickets fetched successfully"));
 });
+
 
 export const updateTicketStatus = asyncHandler(async (req, res) => {
   const { status } = req.body;
@@ -105,20 +121,37 @@ export const assignTicket = asyncHandler(async (req, res) => {
     throw new apiError(404, "Ticket not found");
   }
 
+  const oldAssignee = ticket.assignedTo || "unassigned";
+
+  // Update ticket
   ticket.assignedTo = assignedTo;
   await ticket.save();
 
-  // 🔔 Notification
-  await createNotification({
+  // 📝 Audit Log
+  await AuditLog.create({
+    ticketId: ticket._id,
+    action: "TICKET_ASSIGNED",
+    oldValue: oldAssignee.toString(),
+    newValue: assignedTo,
+    performedBy: req.user._id,
+  });
+
+  // 🔔 Notification (DB)
+  const notification = await createNotification({
     user: assignedTo,
     ticketId: ticket._id,
     type: "TICKET_ASSIGNED",
     message: `You have been assigned ticket "${ticket.title}".`,
   });
 
-  return res
-    .status(200)
-    .json(new apiResponse(200, ticket, "Ticket assigned successfully"));
+  // 🔴 Real-time socket emit
+  getIO()
+    .to(assignedTo.toString())
+    .emit("notification", notification);
+
+  return res.status(200).json(
+    new apiResponse(200, ticket, "Ticket assigned successfully")
+  );
 });
 
 
@@ -254,28 +287,6 @@ export const overrideSla = asyncHandler(async (req, res) => {
   );
 });
 
-
-export const getTicketAuditLogs = asyncHandler(async (req, res) => {
-  const logs = await AuditLog.find({ ticketId: req.params.ticketId })
-    .populate("performedBy", "username role")
-    .sort({ createdAt: -1 });
-
-  return res.json(
-    new apiResponse(200, logs, "Audit logs fetched")
-  );
-});
-
-export const getAllAuditLogs = asyncHandler(async (req, res) => {
-  const logs = await AuditLog.find()
-    .populate("ticketId", "title severity status")
-    .populate("performedBy", "username role")
-    .sort({ createdAt: -1 })
-    .limit(50); // latest 50 logs
-
-  return res.json(
-    new apiResponse(200, logs, "All audit logs fetched")
-  );
-});
 
 
 

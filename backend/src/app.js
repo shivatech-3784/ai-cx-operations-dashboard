@@ -5,6 +5,8 @@ import userRoutes from "./routes/user.routes.js";
 import ticketRoutes from "./routes/ticket.routes.js";
 import errorMiddleware from "./middlewares/error.middleware.js";
 import notificationRoutes from "./routes/notification.routes.js";
+import dashboardRoutes from "./routes/dashboard.routes.js";
+import auditLogRoutes from "./routes/auditLog.routes.js";
 
 
 const app = express();
@@ -23,6 +25,8 @@ app.use(cookieParser());
 app.use("/AICX-Dashboard/api/v1/users", userRoutes);
 app.use("/AICX-Dashboard/api/v1/tickets", ticketRoutes);
 app.use("/AICX-Dashboard/api/v1/notifications", notificationRoutes);
+app.use("/AICX-Dashboard/api/v1/dashboard", dashboardRoutes);
+app.use("/AICX-Dashboard/api/v1/audit-logs", auditLogRoutes);
 
 app.get("/", (req, res) => {
   res.send("AI CX Operations Dashboard is working");

@@ -7,9 +7,7 @@ import {
   getTicketsByStatus,
   getEscalatedTickets,
   overrideSeverity,
-  getTicketAuditLogs,
   overrideSla,
-  getAllAuditLogs,
 } from "../controllers/ticket.controller.js";
 
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -79,13 +77,6 @@ router.patch(
   overrideSeverity
 );
 
-router.get(
-  "/:ticketId/audit-logs",
-  verifyJWT,
-  authorizeRoles("admin"),
-  getTicketAuditLogs
-);
-
 router.patch(
   "/:ticketId/override-sla",
   verifyJWT,
@@ -93,12 +84,6 @@ router.patch(
   overrideSla
 );
 
-router.get(
-  "/audit-logs",
-  verifyJWT,
-  authorizeRoles("admin"),
-  getAllAuditLogs
-);
 
 export default router;
 

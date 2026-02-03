@@ -102,19 +102,19 @@ const Loginuser = asyncHandler(async (req, res) => {
     throw new apiError(500, "Failed to retrieve saved user");
   }
   // for production purpose 
-  // const options = {
-  //   httpOnly: true,
-  //   secure: true,
-  //   sameSite: "None",
-  //   maxAge: 24 * 60 * 60 * 1000,
-  // };
   const options = {
-  httpOnly: true,
-  secure: false,        // 🔴 MUST be false on localhost
-  sameSite: "lax",    // 🔴 MUST be lax on localhost
-  path: "/",   
-  maxAge: 24 * 60 * 60 * 1000,
+    httpOnly: true,
+    secure: true,
+    sameSite: "None",
+    maxAge: 24 * 60 * 60 * 1000,
   };
+  // const options = {
+  // httpOnly: true,
+  // secure: false,        // 🔴 MUST be false on localhost
+  // sameSite: "lax",    // 🔴 MUST be lax on localhost
+  // path: "/",   
+  // maxAge: 24 * 60 * 60 * 1000,
+  // };
   return res
     .status(200)
     .cookie("accesstoken", accessToken, options)

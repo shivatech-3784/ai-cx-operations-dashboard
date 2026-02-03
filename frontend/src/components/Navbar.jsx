@@ -9,15 +9,17 @@ const Navbar = () => {
   const handleLogout = async () => {
     try {
       await logout();
-      window.location.href = "/login";
+      window.location.href = "/"; // ✅ landing page
     } catch (err) {
       console.error("Logout failed");
     }
   };
 
+  const isActive = (path) => location.pathname === path;
+
   const navLinkClass = (path) =>
     `text-sm font-medium transition ${
-      location.pathname === path
+      isActive(path)
         ? "text-indigo-600 border-b-2 border-indigo-600 pb-1"
         : "text-gray-600 hover:text-indigo-600"
     }`;
@@ -25,37 +27,43 @@ const Navbar = () => {
   return (
     <nav className="w-full bg-white border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-6 h-16 flex justify-between items-center">
-        {/* Left */}
+        {/* LEFT */}
         <div className="flex items-center gap-8">
           <span className="text-xl font-bold text-indigo-600">
             AI CX
           </span>
 
-          <Link to="/" className={navLinkClass("/")}>
+          <Link to="/app" className={navLinkClass("/app")}>
             Dashboard
           </Link>
 
-          <Link to="/tickets" className={navLinkClass("/tickets")}>
+          <Link
+            to="/app/tickets"
+            className={navLinkClass("/app/tickets")}
+          >
             Tickets
           </Link>
 
           {user?.role === "admin" && (
             <Link
-              to="/audit-logs"
-              className={navLinkClass("/audit-logs")}
+              to="/app/audit-logs"
+              className={navLinkClass("/app/audit-logs")}
             >
               Audit Logs
             </Link>
           )}
         </div>
 
-        {/* Right */}
+        {/* RIGHT */}
         <div className="flex items-center gap-4">
           <NotificationBell />
 
           <span className="text-sm text-gray-700">
             {user?.username}
-            <span className="text-gray-400"> ({user?.role})</span>
+            <span className="text-gray-400">
+              {" "}
+              ({user?.role})
+            </span>
           </span>
 
           <button

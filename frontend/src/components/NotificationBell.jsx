@@ -7,10 +7,9 @@ const NotificationBell = () => {
   const [notifications, setNotifications] = useState([]);
   const [open, setOpen] = useState(false);
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = notifications.length;
 
   useEffect(() => {
-    // Load existing notifications
     fetchNotifications().then(setNotifications);
   }, []);
 
@@ -27,20 +26,26 @@ const NotificationBell = () => {
   }, [socket]);
 
   const handleRead = async (id) => {
-    await markAsRead(id);
-    setNotifications((prev) =>
-      prev.map((n) => (n._id === id ? { ...n, read: true } : n)),
-    );
+    try {
+      await markAsRead(id);
+
+      // ✅ remove from UI immediately
+      setNotifications((prev) =>
+        prev.filter((n) => n._id !== id)
+      );
+    } catch (err) {
+      console.error("Failed to mark notification as read");
+    }
   };
 
   return (
     <div className="relative">
-      {/* Bell Button */}
-        <button
-          onClick={() => setOpen(!open)}
-          className="relative text-xl flex items-center"
-        >
-         🔔
+      {/* Bell */}
+      <button
+        onClick={() => setOpen(!open)}
+        className="relative text-xl flex items-center"
+      >
+        🔔
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs px-1 rounded-full">
             {unreadCount}
@@ -56,28 +61,24 @@ const NotificationBell = () => {
           </div>
 
           <div className="max-h-96 overflow-y-auto">
-            {notifications.length === 0 && (
+            {notifications.length === 0 ? (
               <p className="px-4 py-6 text-sm text-gray-500 text-center">
-                No notifications
+                No new notifications
               </p>
+            ) : (
+              notifications.map((n) => (
+                <div
+                  key={n._id}
+                  onClick={() => handleRead(n._id)}
+                  className="px-4 py-3 text-sm cursor-pointer border-b last:border-b-0 hover:bg-gray-100 transition"
+                >
+                  <p className="text-gray-800 leading-snug">{n.message}</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {new Date(n.createdAt).toLocaleString()}
+                  </p>
+                </div>
+              ))
             )}
-
-            {notifications.map((n) => (
-              <div
-                key={n._id}
-                onClick={() => handleRead(n._id)}
-                className={`px-4 py-3 text-sm cursor-pointer border-b last:border-b-0
-            hover:bg-gray-100 transition
-            ${!n.read ? "bg-blue-50 font-medium" : "bg-white"}
-          `}
-              >
-                <p className="text-gray-800 leading-snug">{n.message}</p>
-
-                <p className="text-xs text-gray-400 mt-1">
-                  {new Date(n.createdAt).toLocaleString()}
-                </p>
-              </div>
-            ))}
           </div>
         </div>
       )}

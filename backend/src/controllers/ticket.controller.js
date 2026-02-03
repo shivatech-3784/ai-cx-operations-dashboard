@@ -7,6 +7,8 @@ import { generateAiSummary } from "../utils/summary.utils.js";
 import { analyzeTicketWithAI } from "../utils/ai.utils.js";
 import AuditLog from "../models/auditLog.model.js";
 import { createNotification } from "../utils/notification.utils.js";
+import { getIO } from "../socket/index.js";
+import User from "../models/user.model.js";
 
 const calculateSlaDeadline = (severity) => {
   const now = new Date();
@@ -116,43 +118,48 @@ export const assignTicket = asyncHandler(async (req, res) => {
     throw new apiError(400, "assignedTo userId is required");
   }
 
+  // 1️⃣ ASSIGNMENT (CRITICAL PATH)
   const ticket = await Ticket.findById(ticketId);
   if (!ticket) {
     throw new apiError(404, "Ticket not found");
   }
 
-  const oldAssignee = ticket.assignedTo || "unassigned";
-
-  // Update ticket
+  const previousAssigneeId = ticket.assignedTo;
   ticket.assignedTo = assignedTo;
-  await ticket.save();
+  await ticket.save(); // ✅ NEVER BLOCK THIS
 
-  // 📝 Audit Log
-  await AuditLog.create({
-    ticketId: ticket._id,
-    action: "TICKET_ASSIGNED",
-    oldValue: oldAssignee.toString(),
-    newValue: assignedTo,
-    performedBy: req.user._id,
-  });
+  // 2️⃣ AUDIT LOG (NON-CRITICAL, SAFE)
+  try {
+    const oldName = previousAssigneeId
+      ? (await User.findById(previousAssigneeId)?.select("username"))?.username
+      : "unassigned";
 
-  // 🔔 Notification (DB)
-  const notification = await createNotification({
-    user: assignedTo,
-    ticketId: ticket._id,
-    type: "TICKET_ASSIGNED",
-    message: `You have been assigned ticket "${ticket.title}".`,
-  });
+    const newName =
+      (await User.findById(assignedTo)?.select("username"))?.username ||
+      "unknown";
 
-  // 🔴 Real-time socket emit
-  getIO()
-    .to(assignedTo.toString())
-    .emit("notification", notification);
+    await AuditLog.create({
+      ticketId: ticket._id,
+      action: "TICKET_ASSIGNED",
+      oldValue: oldName,
+      newValue: newName,
+      performedBy: req.user._id,
+    });
+  } catch (err) {
+    console.error("Audit log failed (ignored):", err.message);
+  }
+
+  // 3️⃣ RETURN UPDATED TICKET
+  const populatedTicket = await Ticket.findById(ticket._id)
+    .populate("createdBy", "username email")
+    .populate("assignedTo", "username email");
 
   return res.status(200).json(
-    new apiResponse(200, ticket, "Ticket assigned successfully")
+    new apiResponse(200, populatedTicket, "Ticket assigned successfully")
   );
 });
+
+
 
 
 export const getTicketsByStatus = asyncHandler(async (req, res) => {

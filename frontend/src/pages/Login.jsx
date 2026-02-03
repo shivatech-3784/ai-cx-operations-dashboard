@@ -16,7 +16,7 @@ const Login = () => {
     try {
       setLoading(true);
       await login({ email, password });
-      navigate("/");
+      navigate("/app");
     } catch (err) {
       alert("Login failed");
     } finally {

@@ -13,7 +13,8 @@ const auditLogSchema = new mongoose.Schema(
       enum: [
         "SEVERITY_OVERRIDE",
         "SLA_OVERRIDE",
-        "SLA_ESCALATED",   // 🔥 ADD THIS
+        "SLA_ESCALATED",
+        "TICKET_ASSIGNED", 
       ],
       required: true,
     },

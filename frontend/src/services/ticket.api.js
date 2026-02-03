@@ -12,20 +12,14 @@ export const fetchTickets = async () => {
    Create ticket
    ========================= */
 export const createTicket = async (payload) => {
-  const res = await axiosInstance.post(
-    "/tickets/create",
-    payload
-  );
+  const res = await axiosInstance.post("/tickets/create", payload);
   return res.data.data;
 };
 
 /* =========================
    Update ticket status
    ========================= */
-export const updateTicketStatus = async (
-  ticketId,
-  status
-) => {
+export const updateTicketStatus = async (ticketId, status) => {
   const res = await axiosInstance.patch(
     `/tickets/${ticketId}/status`,
     { status }
@@ -36,13 +30,32 @@ export const updateTicketStatus = async (
 /* =========================
    Assign ticket (ADMIN)
    ========================= */
-export const assignTicket = async (
-  ticketId,
-  assignedTo
-) => {
+export const assignTicket = async (ticketId, assignedTo) => {
   const res = await axiosInstance.patch(
     `/tickets/${ticketId}/assign`,
     { assignedTo }
+  );
+  return res.data.data;
+};
+
+/* =========================
+   Override severity (ADMIN)
+   ========================= */
+export const overrideSeverity = async (ticketId, severity) => {
+  const res = await axiosInstance.patch(
+    `/tickets/${ticketId}/override-severity`,
+    { severity }
+  );
+  return res.data.data;
+};
+
+/* =========================
+   Override SLA deadline (ADMIN)
+   ========================= */
+export const overrideSla = async (ticketId, payload) => {
+  const res = await axiosInstance.patch(
+    `/tickets/${ticketId}/override-sla`,
+    payload
   );
   return res.data.data;
 };

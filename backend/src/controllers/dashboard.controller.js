@@ -10,17 +10,17 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
   // ================= AGENT DASHBOARD =================
   if (user.role === "agent") {
     const myTickets = await Ticket.countDocuments({
-      $or: [{ assignedTo: user._id }, { createdBy: user._id }],
+      $or: [{ assignedTo: user._id }],
     });
 
     const overdue = await Ticket.countDocuments({
-      $or: [{ assignedTo: user._id }, { createdBy: user._id }],
+      $or: [{ assignedTo: user._id }],
       status: { $ne: "resolved" },
       slaDeadline: { $lt: now },
     });
 
     const escalated = await Ticket.countDocuments({
-      $or: [{ assignedTo: user._id }, { createdBy: user._id }],
+      $or: [{ assignedTo: user._id }],
       isEscalated: true,
     });
 

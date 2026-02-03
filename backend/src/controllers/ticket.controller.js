@@ -52,9 +52,9 @@ export const createTicket = asyncHandler(async (req, res) => {
     createdBy: req.user._id,
   });
 
-  return res.status(201).json(
-    new apiResponse(201, ticket, "Ticket created successfully")
-  );
+  return res
+    .status(201)
+    .json(new apiResponse(201, ticket, "Ticket created successfully"));
 });
 
 export const getAllTickets = asyncHandler(async (req, res) => {
@@ -64,10 +64,8 @@ export const getAllTickets = asyncHandler(async (req, res) => {
   // 🔒 Agent: only assigned or created tickets
   if (user.role === "agent") {
     filter = {
-      $or: [
-        { assignedTo: user._id },
-        { createdBy: user._id },
-      ],
+      assignedTo: user._id,
+      status: { $ne: "resolved" },
     };
   }
 
@@ -82,7 +80,6 @@ export const getAllTickets = asyncHandler(async (req, res) => {
     .json(new apiResponse(200, tickets, "Tickets fetched successfully"));
 });
 
-
 export const updateTicketStatus = asyncHandler(async (req, res) => {
   const { status } = req.body;
 
@@ -93,22 +90,15 @@ export const updateTicketStatus = asyncHandler(async (req, res) => {
 
   const now = new Date();
 
-  if (
-    ticket.slaDeadline &&
-    now > ticket.slaDeadline &&
-    status !== "resolved"
-  ) {
+  if (ticket.slaDeadline && now > ticket.slaDeadline && status !== "resolved") {
     ticket.isEscalated = true;
   }
 
   ticket.status = status;
   await ticket.save();
 
-  return res.json(
-    new apiResponse(200, ticket, "Ticket status updated")
-  );
+  return res.json(new apiResponse(200, ticket, "Ticket status updated"));
 });
-
 
 export const assignTicket = asyncHandler(async (req, res) => {
   const { ticketId } = req.params;
@@ -154,13 +144,12 @@ export const assignTicket = asyncHandler(async (req, res) => {
     .populate("createdBy", "username email")
     .populate("assignedTo", "username email");
 
-  return res.status(200).json(
-    new apiResponse(200, populatedTicket, "Ticket assigned successfully")
-  );
+  return res
+    .status(200)
+    .json(
+      new apiResponse(200, populatedTicket, "Ticket assigned successfully"),
+    );
 });
-
-
-
 
 export const getTicketsByStatus = asyncHandler(async (req, res) => {
   const { status } = req.query;
@@ -183,11 +172,8 @@ export const getTicketsByStatus = asyncHandler(async (req, res) => {
 export const getEscalatedTickets = asyncHandler(async (req, res) => {
   const tickets = await Ticket.find({ isEscalated: true });
 
-  return res.json(
-    new apiResponse(200, tickets, "Escalated tickets fetched")
-  );
+  return res.json(new apiResponse(200, tickets, "Escalated tickets fetched"));
 });
-
 
 export const overrideSeverity = asyncHandler(async (req, res) => {
   const { ticketId } = req.params;
@@ -229,7 +215,7 @@ export const overrideSeverity = asyncHandler(async (req, res) => {
   });
 
   return res.json(
-    new apiResponse(200, ticket, "Severity overridden successfully")
+    new apiResponse(200, ticket, "Severity overridden successfully"),
   );
 });
 
@@ -289,13 +275,5 @@ export const overrideSla = asyncHandler(async (req, res) => {
     message: `SLA deadline for ticket "${ticket.title}" was updated.`,
   });
 
-  return res.json(
-    new apiResponse(200, ticket, "SLA overridden successfully")
-  );
+  return res.json(new apiResponse(200, ticket, "SLA overridden successfully"));
 });
-
-
-
-
-
-

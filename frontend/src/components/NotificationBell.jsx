@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSocket } from "../context/socketContext";
-import { fetchNotifications, markAsRead } from "../services/Notification.api";
+import { fetchNotifications, markAsRead } from "../services/Notification.api.js";
 
 const NotificationBell = () => {
   const socket = useSocket();

@@ -15,7 +15,7 @@ const generateAccessandRefreshTokens = async (userId) => {
   } catch (error) {
     throw new apiError(
       500,
-      "Something went wrong while generating the access and refresh token"
+      "Something went wrong while generating the access and refresh token",
     );
   }
 };
@@ -44,13 +44,13 @@ const createUser = asyncHandler(async (req, res) => {
   }
 
   const { accessToken, refreshToken } = await generateAccessandRefreshTokens(
-    newUser._id
+    newUser._id,
   );
   newUser.refreshtoken = refreshToken;
   await newUser.save({ validateBeforeSave: false });
 
   const savedUser = await User.findById(newUser._id).select(
-    "-password -refreshtoken"
+    "-password -refreshtoken",
   );
 
   if (!savedUser) {
@@ -65,8 +65,8 @@ const createUser = asyncHandler(async (req, res) => {
         accessToken,
         refreshToken,
       },
-      "User registered successfully"
-    )
+      "User registered successfully",
+    ),
   );
 });
 
@@ -91,28 +91,30 @@ const Loginuser = asyncHandler(async (req, res) => {
   }
 
   const { accessToken, refreshToken } = await generateAccessandRefreshTokens(
-    user._id
+    user._id,
   );
 
   const savedUser = await User.findById(user._id).select(
-    "-password -refreshtoken"
+    "-password -refreshtoken",
   );
 
   if (!savedUser) {
     throw new apiError(500, "Failed to retrieve saved user");
   }
-  // for production purpose 
+  // for production purpose
   const options = {
     httpOnly: true,
-    secure: true,
-    sameSite: "None",
+    secure: true, // required for HTTPS
+    sameSite: "none", // MUST be lowercase
+    path: "/", // IMPORTANT (don’t skip)
     maxAge: 24 * 60 * 60 * 1000,
   };
+
   // const options = {
   // httpOnly: true,
   // secure: false,        // 🔴 MUST be false on localhost
   // sameSite: "lax",    // 🔴 MUST be lax on localhost
-  // path: "/",   
+  // path: "/",
   // maxAge: 24 * 60 * 60 * 1000,
   // };
   return res
@@ -127,8 +129,8 @@ const Loginuser = asyncHandler(async (req, res) => {
           accessToken,
           refreshToken,
         },
-        "User logged in successfully"
-      )
+        "User logged in successfully",
+      ),
     );
 });
 const Logoutuser = asyncHandler(async (req, res) => {
@@ -144,10 +146,12 @@ const Logoutuser = asyncHandler(async (req, res) => {
 
   const options = {
     httpOnly: true,
-    secure: true,
-    sameSite: "None",
+    secure: true, // required for HTTPS
+    sameSite: "none", // MUST be lowercase
+    path: "/", // IMPORTANT (don’t skip)
     maxAge: 24 * 60 * 60 * 1000,
   };
+
   return res
     .status(200)
     .clearCookie("accesstoken", options)
@@ -161,7 +165,7 @@ const getuserdetails = asyncHandler(async (req, res) => {
     throw new apiError(404, "User not found");
   }
   const userdetails = await User.findById(user._id).select(
-    "-password -refreshtoken"
+    "-password -refreshtoken",
   );
   if (!userdetails) {
     throw new apiError(404, "User details not found");
@@ -169,7 +173,7 @@ const getuserdetails = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(
-      new apiResponse(200, userdetails, "User details retrieved successfully")
+      new apiResponse(200, userdetails, "User details retrieved successfully"),
     );
 });
 
@@ -199,14 +203,12 @@ const getallusers = asyncHandler(async (req, res) => {
     .json(new apiResponse(200, users, "Users retrieved successfully"));
 });
 
-
 const getAgents = asyncHandler(async (req, res) => {
-  const agents = await User.find({ role: "agent" })
-    .select("_id username email");
-
-  return res.json(
-    new apiResponse(200, agents, "Agents fetched")
+  const agents = await User.find({ role: "agent" }).select(
+    "_id username email",
   );
+
+  return res.json(new apiResponse(200, agents, "Agents fetched"));
 });
 
 export {
@@ -216,5 +218,5 @@ export {
   getuserdetails,
   getuserbyid,
   getallusers,
-  getAgents
+  getAgents,
 };

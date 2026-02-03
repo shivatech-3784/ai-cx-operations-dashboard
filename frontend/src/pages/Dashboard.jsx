@@ -89,6 +89,41 @@ const Dashboard = () => {
           />
         </div>
       )}
+
+      {/* ================= AGENT WORKLOAD ================= */}
+      {user.role === "admin" && stats.agentWorkload?.length > 0 && (
+        <div className="mt-10">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">
+            Agent Workload
+          </h2>
+
+          <div className="bg-white rounded-xl shadow border divide-y">
+            {stats.agentWorkload.map((agent) => (
+              <div
+                key={agent.agentId}
+                className="flex justify-between items-center px-6 py-4 hover:bg-gray-50"
+              >
+                <span className="text-gray-700 font-medium">
+                  {agent.username}
+                </span>
+
+                <span
+                  className={`px-3 py-1 rounded-full text-sm font-semibold
+              ${
+                agent.count === 0
+                  ? "bg-green-100 text-green-700"
+                  : agent.count < 5
+                    ? "bg-yellow-100 text-yellow-700"
+                    : "bg-red-100 text-red-700"
+              }`}
+                >
+                  {agent.count} tickets
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

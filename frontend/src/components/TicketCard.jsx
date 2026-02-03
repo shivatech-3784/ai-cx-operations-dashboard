@@ -90,31 +90,26 @@ const TicketCard = ({ ticket, onTicketUpdate }) => {
   /* =========================
      Override SLA (ADMIN) ✅ FINAL
      ========================= */
-  const handleSlaOverride = async () => {
-    if (!slaInput) {
-      alert("Please select SLA date & time");
-      return;
-    }
+const handleSlaOverride = async () => {
+  if (!slaInput) {
+    alert("Please select SLA date & time");
+    return;
+  }
 
-    try {
-      // Convert datetime-local → ISO UTC
-      const localDate = new Date(slaInput);
-      const isoDate = new Date(
-        localDate.getTime() - localDate.getTimezoneOffset() * 60000
-      ).toISOString();
+  try {
+    // ✅ store exactly what user selected
+    const updated = await overrideSla(ticket._id, {
+      slaDeadline: new Date(slaInput), // 🔥 THIS LINE
+      reason: "Manual SLA override by admin",
+    });
 
-      const updated = await overrideSla(ticket._id, {
-        slaDeadline: isoDate,
-        reason: "Manual SLA override by admin",
-      });
-
-      onTicketUpdate(updated);
-      setShowSlaInput(false);
-      setSlaInput("");
-    } catch (err) {
-      console.error("SLA override failed", err);
-    }
-  };
+    onTicketUpdate(updated);
+    setShowSlaInput(false);
+    setSlaInput("");
+  } catch (err) {
+    console.error("SLA override failed", err);
+  }
+};
 
   return (
     <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition border p-6">
